@@ -5,146 +5,27 @@
 
 </p>
 
+This plugin is based on work by KraigM (https://github.com/KraigM) and stevenguh (https://github.com/stevenguh).
+I would have used that as a direct base but I had to make many changes just to get it to compile and decided to restart
+with the homebridge-plugin-template.
 
-# Homebridge Platform Plugin Template
+# Homebridge GPIO Garage Door Opeber for Raspberry Pi
 
-This is a template Homebridge platform plugin and can be used as a base to help you get started developing your own plugin.
+This plugin is only in the very initial stages of development. It is unusable in this state.
 
-This template should be used in conjunction with the [developer documentation](https://developers.homebridge.io/). A full list of all supported service types, and their characteristics is available on this site.
+To use it as a development base:
 
-## Clone As Template
+git clone
+cd
+npm install # install dependencies into subdirectory node_modules
+npm run build # do a fresh compile and build of the source
+homebridge -D # test it
+sudo npm link # install a link from this directory into the systems node_modules so you can run the plugin
 
-Click the link below to create a new GitHub Repository using this template, or click the *Use This Template* button above.
+## Pin numbering
 
-<span align="center">
+Pins are numbered using the Broadcom (BCM) numbering standard. To see the pin mapping used on your Raspberry Pi, install the wiringpi with 'sudo apt install wiringpi' and run the 'gpio readall' command. See https://www.ics.com/blog/gpio-programming-using-sysfs-interface for details.
 
-### [Create New Repository From Template](https://github.com/homebridge/homebridge-plugin-template/generate)
+I used the Zero Relay: 2-Channel 5V Relay Board for Pi Zero from PiHut (SKU: 103395) which comes with the stacking header presoldered. It uses Raspberry Pi pins 15 (BCM 22) and 29 (BCM 22) as switch ports to trigger relays 1 and 2 respectively. Relay 1 is closest to Raspberry Pi board pin 1/2 and Relay 2 is closest to Raspberry Pi board pin 39/40.
 
-</span>
-
-## Setup Development Environment
-
-To develop Homebridge plugins you must have Node.js 12 or later installed, and a modern code editor such as [VS Code](https://code.visualstudio.com/). This plugin template uses [TypeScript](https://www.typescriptlang.org/) to make development easier and comes with pre-configured settings for [VS Code](https://code.visualstudio.com/) and ESLint. If you are using VS Code install these extensions:
-
-* [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
-
-## Install Development Dependencies
-
-Using a terminal, navigate to the project folder and run this command to install the development dependencies:
-
-```
-npm install
-```
-
-## Update package.json
-
-Open the [`package.json`](./package.json) and change the following attributes:
-
-* `name` - this should be prefixed with `homebridge-` or `@username/homebridge-` and contain no spaces or special characters apart from a dashes
-* `displayName` - this is the "nice" name displayed in the Homebridge UI
-* `repository.url` - Link to your GitHub repo
-* `bugs.url` - Link to your GitHub repo issues page
-
-When you are ready to publish the plugin you should set `private` to false, or remove the attribute entirely.
-
-## Update Plugin Defaults
-
-Open the [`src/settings.ts`](./src/settings.ts) file and change the default values:
-
-* `PLATFORM_NAME` - Set this to be the name of your platform. This is the name of the platform that users will use to register the plugin in the Homebridge `config.json`.
-* `PLUGIN_NAME` - Set this to be the same name you set in the [`package.json`](./package.json) file. 
-
-Open the [`config.schema.json`](./config.schema.json) file and change the following attribute:
-
-* `pluginAlias` - set this to match the `PLATFORM_NAME` you defined in the previous step.
-
-## Build Plugin
-
-TypeScript needs to be compiled into JavaScript before it can run. The following command will compile the contents of your [`src`](./src) directory and put the resulting code into the `dist` folder.
-
-```
-npm run build
-```
-
-## Link To Homebridge
-
-Run this command so your global install of Homebridge can discover the plugin in your development environment:
-
-```
-npm link
-```
-
-You can now start Homebridge, use the `-D` flag so you can see debug log messages in your plugin:
-
-```
-homebridge -D
-```
-
-## Watch For Changes and Build Automatically
-
-If you want to have your code compile automatically as you make changes, and restart Homebridge automatically between changes you can run:
-
-```
-npm run watch
-```
-
-This will launch an instance of Homebridge in debug mode which will restart every time you make a change to the source code. It will load the config stored in the default location under `~/.homebridge`. You may need to stop other running instances of Homebridge while using this command to prevent conflicts. You can adjust the Homebridge startup command in the [`nodemon.json`](./nodemon.json) file.
-
-## Customise Plugin
-
-You can now start customising the plugin template to suit your requirements.
-
-* [`src/platform.ts`](./src/platform.ts) - this is where your device setup and discovery should go.
-* [`src/platformAccessory.ts`](./src/platformAccessory.ts) - this is where your accessory control logic should go, you can rename or create multiple instances of this file for each accessory type you need to implement as part of your platform plugin. You can refer to the [developer documentation](https://developers.homebridge.io/) to see what characteristics you need to implement for each service type.
-* [`config.schema.json`](./config.schema.json) - update the config schema to match the config you expect from the user. See the [Plugin Config Schema Documentation](https://developers.homebridge.io/#/config-schema).
-
-## Versioning Your Plugin
-
-Given a version number `MAJOR`.`MINOR`.`PATCH`, such as `1.4.3`, increment the:
-
-1. **MAJOR** version when you make breaking changes to your plugin,
-2. **MINOR** version when you add functionality in a backwards compatible manner, and
-3. **PATCH** version when you make backwards compatible bug fixes.
-
-You can use the `npm version` command to help you with this:
-
-```bash
-# major update / breaking changes
-npm version major
-
-# minor update / new features
-npm version update
-
-# patch / bugfixes
-npm version patch
-```
-
-## Publish Package
-
-When you are ready to publish your plugin to [npm](https://www.npmjs.com/), make sure you have removed the `private` attribute from the [`package.json`](./package.json) file then run:
-
-```
-npm publish
-```
-
-If you are publishing a scoped plugin, i.e. `@username/homebridge-xxx` you will need to add `--access=public` to command the first time you publish.
-
-#### Publishing Beta Versions
-
-You can publish *beta* versions of your plugin for other users to test before you release it to everyone.
-
-```bash
-# create a new pre-release version (eg. 2.1.0-beta.1)
-npm version prepatch --preid beta
-
-# publsh to @beta
-npm publish --tag=beta
-```
-
-Users can then install the  *beta* version by appending `@beta` to the install command, for example:
-
-```
-sudo npm install -g homebridge-example-plugin@beta
-```
-
-
+Note that the BCM pins 0-6 have pull-up resistors installed, BCM pins 7 & 8 are apparently hardwired as output pins and cannot be used for sensor inputs, BCM pins 9-29 have pull-down resistors installed. It is therefore assumed that sensors attached to BCM pins 0-6 have their opposite terminals attached to 0V (ground) and that sensors attached to BCM pins 9-29 have their opposite terminals attached to 3.3V.

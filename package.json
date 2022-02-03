@@ -2,7 +2,7 @@
   "private": true,
   "displayName": "Plugin Name",
   "name": "homebridge-plugin-name",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A short description about what your plugin does.",
   "license": "Apache-2.0",
   "repository": {
@@ -13,8 +13,8 @@
     "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
   },
   "engines": {
-    "node": ">=14.18.1",
-    "homebridge": ">=1.3.5"
+    "node": ">=17.3.0",
+    "homebridge": ">=1.4.0"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -26,16 +26,18 @@
   "keywords": [
     "homebridge-plugin"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "onoff": "6.0.3"
+  },
   "devDependencies": {
     "@types/node": "^16.10.9",
-    "@typescript-eslint/eslint-plugin": "^5.0.0",
-    "@typescript-eslint/parser": "^5.0.0",
-    "eslint": "^8.0.1",
-    "homebridge": "^1.3.5",
-    "nodemon": "^2.0.13",
+    "@typescript-eslint/eslint-plugin": "^5.10.2",
+    "@typescript-eslint/parser": "^5.10.2",
+    "eslint": "^8.8.0",
+    "homebridge": "^1.4.0",
+    "nodemon": "^2.0.15",
     "rimraf": "^3.0.2",
-    "ts-node": "^10.3.0",
-    "typescript": "^4.4.4"
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
   }
 }
