@@ -59,10 +59,6 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
         exampleUniqueId: 'ABCD',
         exampleDisplayName: 'Bedroom',
       },
-      {
-        exampleUniqueId: 'EFGH',
-        exampleDisplayName: 'Kitchen',
-      },
     ];
 
     // loop over the discovered devices and register each one if it has not already been registered
