@@ -68,6 +68,15 @@ export class GPIOGarageDoorAccessory {
     const motionSensorTwoService = this.accessory.getService('Motion Sensor Two Name') ||
       this.accessory.addService(this.platform.Service.MotionSensor, 'Motion Sensor Two Name', 'YourUniqueIdentifier-2');
 
+    // add two "contsact sensors" services to the accessory
+    const openedContactSensorService = this.accessory.getService('Opened Contact Sensor') ||
+      this.accessory.addService(this.platform.Service.ContactSensor, 'Opened Contact Sensor', 'OpenedContactSensor');
+    this.platform.log.debug('contactSensor: ' + openedContactSensorService.displayName);
+
+    const closedContactSensorService = this.accessory.getService('Closed Contact Sensor') ||
+      this.accessory.addService(this.platform.Service.ContactSensor, 'Closed Contact Sensor', 'ClosedContactSensor');
+    this.platform.log.debug('contactSensor: ' + closedContactSensorService.displayName);
+
     /**
      * Updating characteristics values asynchronously.
      *
@@ -78,13 +87,21 @@ export class GPIOGarageDoorAccessory {
      *
      */
     let motionDetected = false;
+    let contactState = 0;
     setInterval(() => {
       // EXAMPLE - inverse the trigger
       motionDetected = !motionDetected;
+      contactState = (contactState + 1) % 4;
+      const openedState = (contactState > 1);
+      const closedState = (contactState % 2) === 1;
 
       // push the new value to HomeKit
       motionSensorOneService.updateCharacteristic(this.platform.Characteristic.MotionDetected, motionDetected);
       motionSensorTwoService.updateCharacteristic(this.platform.Characteristic.MotionDetected, !motionDetected);
+      // openedContactSensorService.updateCharacteristic(this.platform.Characteristic.ContactSensorState, openedState);
+      // closedContactSensorService.updateCharacteristic(this.platform.Characteristic.ContactSensorState, closedState);
+      openedContactSensorService.setCharacteristic(this.platform.Characteristic.ContactSensorState, openedState);
+      closedContactSensorService.setCharacteristic(this.platform.Characteristic.ContactSensorState, closedState);
 
       // this.platform.log.debug('Triggering motionSensorOneService:', motionDetected);
       // this.platform.log.debug('Triggering motionSensorTwoService:', !motionDetected);
