@@ -58,13 +58,6 @@ export class GPIOGarageDoorAccessory {
      * can use the same sub type id.)
      */
 
-    // Example: add two "motion sensor" services to the accessory
-    const motionSensorOneService = this.accessory.getService('Motion Sensor One Name') ||
-      this.accessory.addService(this.platform.Service.MotionSensor, 'Motion Sensor One Name', 'YourUniqueIdentifier-1');
-
-    const motionSensorTwoService = this.accessory.getService('Motion Sensor Two Name') ||
-      this.accessory.addService(this.platform.Service.MotionSensor, 'Motion Sensor Two Name', 'YourUniqueIdentifier-2');
-
     // add two "contsact sensors" services to the accessory
     const openedContactSensorService = this.accessory.getService('Opened Contact Sensor') ||
       this.accessory.addService(this.platform.Service.ContactSensor, 'Opened Contact Sensor', 'OpenedContactSensor');
@@ -73,24 +66,6 @@ export class GPIOGarageDoorAccessory {
     const closedContactSensorService = this.accessory.getService('Closed Contact Sensor') ||
       this.accessory.addService(this.platform.Service.ContactSensor, 'Closed Contact Sensor', 'ClosedContactSensor');
     this.platform.log.debug('contactSensor: ' + closedContactSensorService.displayName);
-
-    /**
-     * Updating characteristics values asynchronously.
-     *
-     * Example showing how to update the state of a Characteristic asynchronously instead
-     * of using the `on('get')` handlers.
-     * Here we change update the motion sensor trigger states on and off every 10 seconds
-     * the `updateCharacteristic` method.
-     *
-     */
-    let motionDetected = false;
-    setInterval(() => {
-      // EXAMPLE - inverse the trigger
-      motionDetected = !motionDetected;
-      // push the new value to HomeKit
-      motionSensorOneService.updateCharacteristic(this.platform.Characteristic.MotionDetected, motionDetected);
-      motionSensorTwoService.updateCharacteristic(this.platform.Characteristic.MotionDetected, !motionDetected);
-    }, 10000);
 
     setInterval(() => {
       const ContactSensorState = this.platform.Characteristic.ContactSensorState;
