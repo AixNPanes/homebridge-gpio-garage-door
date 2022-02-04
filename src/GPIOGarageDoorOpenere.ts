@@ -60,7 +60,7 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
     const devices = [
       {
         uniqueId: 'ABCD',
-        displayName: 'Bedroom',
+        displayName: 'Garage',
       },
     ];
 
