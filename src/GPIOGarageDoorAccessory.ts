@@ -7,7 +7,7 @@ import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpenere';
  * An instance of this class is created for each accessory your platform registers
  * Each accessory may expose multiple services of different service types.
  */
-export class ExamplePlatformAccessory {
+export class GPIOGarageDoorAccessory {
   private service: Service;
 
   /**
@@ -86,8 +86,8 @@ export class ExamplePlatformAccessory {
       motionSensorOneService.updateCharacteristic(this.platform.Characteristic.MotionDetected, motionDetected);
       motionSensorTwoService.updateCharacteristic(this.platform.Characteristic.MotionDetected, !motionDetected);
 
-      this.platform.log.debug('Triggering motionSensorOneService:', motionDetected);
-      this.platform.log.debug('Triggering motionSensorTwoService:', !motionDetected);
+      // this.platform.log.debug('Triggering motionSensorOneService:', motionDetected);
+      // this.platform.log.debug('Triggering motionSensorTwoService:', !motionDetected);
     }, 10000);
   }
 
