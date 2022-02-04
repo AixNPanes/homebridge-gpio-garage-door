@@ -84,21 +84,63 @@ export class GPIOGarageDoorAccessory {
      *
      */
     let motionDetected = false;
-    let contactState = 0;
     setInterval(() => {
       // EXAMPLE - inverse the trigger
       motionDetected = !motionDetected;
-      contactState = (contactState + 1) % 4;
-      const openedState = (contactState > 1);
-      const closedState = (contactState % 2) === 1;
-
       // push the new value to HomeKit
       motionSensorOneService.updateCharacteristic(this.platform.Characteristic.MotionDetected, motionDetected);
       motionSensorTwoService.updateCharacteristic(this.platform.Characteristic.MotionDetected, !motionDetected);
-      // openedContactSensorService.updateCharacteristic(this.platform.Characteristic.ContactSensorState, openedState);
-      // closedContactSensorService.updateCharacteristic(this.platform.Characteristic.ContactSensorState, closedState);
+    }, 10000);
+
+    setInterval(() => {
+      const ContactSensorState = this.platform.Characteristic.ContactSensorState;
+      const CONTACT_DETECTED = ContactSensorState.CONTACT_DETECTED;
+      const CONTACT_NOT_DETECTED = ContactSensorState.CONTACT_NOT_DETECTED;
+      const openedContactState = Math.floor(Math.random() * 2) === 1
+        ? CONTACT_DETECTED
+        : CONTACT_NOT_DETECTED;
+      const closedContactState = Math.floor(Math.random() * 2) === 1
+        ? CONTACT_DETECTED
+        : CONTACT_NOT_DETECTED;
+      const openedState = openedContactState === CONTACT_DETECTED;
+      const closedState = closedContactState === CONTACT_DETECTED;
+      this.platform.log.debug('state: ', openedContactState, closedContactState, openedState, closedState);
+
       openedContactSensorService.setCharacteristic(this.platform.Characteristic.ContactSensorState, openedState);
       closedContactSensorService.setCharacteristic(this.platform.Characteristic.ContactSensorState, closedState);
+
+      const CurrentDoorState = this.platform.Characteristic.CurrentDoorState;
+      const CURRENT_OPEN = CurrentDoorState.OPEN;
+      const CURRENT_OPENING = CurrentDoorState.OPENING;
+      const CURRENT_CLOSED = CurrentDoorState.CLOSED;
+      const CURRENT_CLOSING = CurrentDoorState.CLOSING;
+      const CURRENT_STOPPED = CurrentDoorState.STOPPED;
+      let currentState = this.service.getCharacteristic(CurrentDoorState).value;
+      if (openedState) {
+        if (closedState) {
+          switch(currentState) {
+            case CURRENT_OPEN:
+            case CURRENT_OPENING:
+              currentState = CURRENT_OPENING;
+              break;
+            case CURRENT_CLOSED:
+            case CURRENT_CLOSING:
+              currentState = CURRENT_CLOSING;
+              break;
+            default:
+              currentState = CURRENT_STOPPED;
+          }
+        } else {
+          currentState = CURRENT_CLOSED;
+        }
+      } else {
+        if (closedState) {
+          currentState = CURRENT_OPEN;
+        } else {
+          currentState = CURRENT_STOPPED;
+        }
+      }
+      this.service.setCharacteristic(CurrentDoorState, currentState);
 
       // this.platform.log.debug('Triggering motionSensorOneService:', motionDetected);
       // this.platform.log.debug('Triggering motionSensorTwoService:', !motionDetected);
