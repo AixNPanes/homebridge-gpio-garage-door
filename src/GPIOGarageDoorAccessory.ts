@@ -16,6 +16,7 @@ export class GPIOGarageDoorAccessory {
   private closedContactSensorService: Service;
   private openedGpio: Gpio;
   private closedGpio: Gpio;
+  private switchGpio: Gpio;
 
   private switchState = {
     On: false,
@@ -55,10 +56,13 @@ export class GPIOGarageDoorAccessory {
     // each service must implement at-minimum the "required characteristics" for the given service type
     // see https://developers.homebridge.io/#/service/Lightbulb
 
+    this.switchGpio = new Gpio(this.platform.Config.doorSwitchPin, 'high');
+
     // register handlers for the On/Off Characteristic
     this.service.getCharacteristic(TargetDoorState)
       .onSet((value) => {
         this.switchState.On = value as boolean;
+        this.switchGpio.writeSync(this.switchState.On?1:0);
         this.platform.log.debug('Set Switch Characteristic On ->', this.switchState2string(value as number));
       })
       .onGet(() => {
