@@ -1,4 +1,7 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import { ContactSensor, ContactSensorState, CurrentDoorState, GarageDoorOpener } from 'hap-nodejs/dist/lib/definitions';
+import { Name, TargetDoorState } from 'hap-nodejs/dist/lib/definitions';
+import { Service, PlatformAccessory } from 'homebridge';
+import { Gpio } from 'onoff';
 
 import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpenere';
 
@@ -9,6 +12,10 @@ import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpenere';
  */
 export class GPIOGarageDoorAccessory {
   private service: Service;
+  private openedContactSensorService: Service;
+  private closedContactSensorService: Service;
+  private openedGpio: Gpio;
+  private closedGpio: Gpio;
 
   private switchState = {
     On: false,
@@ -33,24 +40,6 @@ export class GPIOGarageDoorAccessory {
       .setCharacteristic(this.platform.Characteristic.Model, 'Default-Model')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, 'Default-Serial');
 
-    const Name = this.platform.Characteristic.Name;
-
-    const GarageDoorOpener = this.platform.Service.GarageDoorOpener;
-
-    const ContactSensor = this.platform.Service.ContactSensor;
-
-    const ContactSensorState = this.platform.Characteristic.ContactSensorState;
-    const CONTACT_DETECTED = ContactSensorState.CONTACT_DETECTED;
-    const CONTACT_NOT_DETECTED = ContactSensorState.CONTACT_NOT_DETECTED;
-
-    const CurrentDoorState = this.platform.Characteristic.CurrentDoorState;
-    const CURRENT_OPEN = CurrentDoorState.OPEN;
-    const CURRENT_OPENING = CurrentDoorState.OPENING;
-    const CURRENT_CLOSED = CurrentDoorState.CLOSED;
-    const CURRENT_CLOSING = CurrentDoorState.CLOSING;
-    const CURRENT_STOPPED = CurrentDoorState.STOPPED;
-
-    const TargetDoorState = this.platform.Characteristic.TargetDoorState;
     // const TARGET_OPEN = TargetDoorState.OPEN;
     // const TARGET_CLOSE = TargetDoorState.CLOSED;
 
@@ -70,11 +59,11 @@ export class GPIOGarageDoorAccessory {
     this.service.getCharacteristic(TargetDoorState)
       .onSet((value) => {
         this.switchState.On = value as boolean;
-        this.platform.log.debug('Set Switch Characteristic On ->', value);
+        this.platform.log.debug('Set Switch Characteristic On ->', this.switchState2string(value as number));
       })
       .onGet(() => {
         const isOn = this.switchState.On;
-        this.platform.log.debug('Get Switch Characteristic On ->', isOn);
+        this.platform.log.debug('Get Switch Characteristic On ->', this.switchState2string(isOn?1:0));
 
         // if you need to return an error to show the device as "Not Responding" in the Home app:
         // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
@@ -93,139 +82,161 @@ export class GPIOGarageDoorAccessory {
      */
 
     // add two "contsact sensors" services to the accessory
-    const openedContactSensorService = this.accessory.getService('Opened Contact Sensor') ||
+    this.openedContactSensorService = this.accessory.getService('Opened Contact Sensor') ||
       this.accessory.addService(ContactSensor, 'Opened Contact Sensor', 'OpenedContactSensor');
-    this.platform.log.debug('contactSensor: ' + openedContactSensorService.displayName);
-    openedContactSensorService.getCharacteristic(ContactSensorState)
-      .onSet((value) => {
-        this.openedSensorState.State = value as number;
-        this.platform.log.debug('Set Opened Sensor Characteristic On ->', value);
+    this.openedContactSensorService.getCharacteristic(ContactSensorState)
+      .onSet((valueOpened) => {
+        this.openedSensorState.State = valueOpened as number;
+        this.platform.log.debug('Set Opened Sensor Characteristic On ->', this.contactSensor2string(this.openedSensorState.State));
+        this.setSwitchState();
       })
       .onGet(() => {
         const state = this.openedSensorState.State;
-        this.platform.log.debug('Get Opened Sensor Characteristic On ->', state);
+        this.platform.log.debug('Get Opened Sensor Characteristic On ->', this.contactSensor2string(state));
 
         // if you need to return an error to show the device as "Not Responding" in the Home app:
         // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
         return state;
       });
+    this.openedGpio = new Gpio(this.platform.Config.doorOpenedSensorPin, 'in', 'both', {});
+    this.openedContactSensorService.setCharacteristic(ContactSensorState, this.openedGpio.readSync());
+    this.openedGpio.watch((err, valueOpened) => {
+      if (err !== null && err !== undefined) {
+        throw err;
+      }
+      this.openedContactSensorService.setCharacteristic(ContactSensorState, valueOpened);
 
-    const closedContactSensorService = this.accessory.getService('Closed Contact Sensor') ||
+    });
+
+    this.closedContactSensorService = this.accessory.getService('Closed Contact Sensor') ||
       this.accessory.addService(ContactSensor, 'Closed Contact Sensor', 'ClosedContactSensor');
-    this.platform.log.debug('contactSensor: ' + closedContactSensorService.displayName);
-    closedContactSensorService.getCharacteristic(ContactSensorState)
-      .onSet((value) => {
-        this.closedSensorState.State = value as number;
-        this.platform.log.debug('Set Closed Sensor Characteristic On ->', value);
+    this.closedContactSensorService.getCharacteristic(ContactSensorState)
+      .onSet((valueClosed) => {
+        this.closedSensorState.State = valueClosed as number;
+        this.platform.log.debug('Set Closed Sensor Characteristic On ->', this.contactSensor2string(this.closedSensorState.State));
+        this.setSwitchState();
       })
       .onGet(() => {
         const state = this.closedSensorState.State;
-        this.platform.log.debug('Get Closed Sensor Characteristic On ->', state);
+        this.platform.log.debug('Get Closed Sensor Characteristic On ->', this.contactSensor2string(state));
 
         // if you need to return an error to show the device as "Not Responding" in the Home app:
         // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
         return state;
       });
+    this.closedGpio = new Gpio(this.platform.Config.doorClosedSensorPin, 'in', 'both', {});
+    this.closedContactSensorService.setCharacteristic(ContactSensorState, this.closedGpio.readSync());
+    this.closedGpio.watch((err, valueClosed) => {
+      if (err !== null && err !== undefined) {
+        throw err;
+      }
+      this.closedContactSensorService.setCharacteristic(ContactSensorState, valueClosed);
+    });
 
-    setInterval(() => {
-      const openedContactState = Math.floor(Math.random() * 2) === 1
-        ? CONTACT_DETECTED
-        : CONTACT_NOT_DETECTED;
-      const closedContactState = Math.floor(Math.random() * 2) === 1
-        ? CONTACT_DETECTED
-        : CONTACT_NOT_DETECTED;
-      const openedState = openedContactState === CONTACT_DETECTED;
-      const closedState = closedContactState === CONTACT_DETECTED;
-      this.platform.log.debug('state: ', openedContactState, closedContactState, openedState, closedState);
+    // this.service.setCharacteristic(CurrentDoorState, currentState);
+  }
 
-      openedContactSensorService.setCharacteristic(this.platform.Characteristic.ContactSensorState, openedState);
-      closedContactSensorService.setCharacteristic(this.platform.Characteristic.ContactSensorState, closedState);
+  contactSensor2string(sensor: number): string {
+    if (sensor === ContactSensorState.CONTACT_DETECTED) {
+      return 'CONTACT_DETECTED';
+    } else {
+      return 'CONTACT_NOT_DETECTED';
+    }
+  }
 
-      let currentState = this.service.getCharacteristic(CurrentDoorState).value;
-      if (openedState) {
-        if (closedState) {
-          switch(currentState) {
-            case CURRENT_OPEN:
-            case CURRENT_OPENING:
-              currentState = CURRENT_OPENING;
-              break;
-            case CURRENT_CLOSED:
-            case CURRENT_CLOSING:
-              currentState = CURRENT_CLOSING;
-              break;
-            default:
-              currentState = CURRENT_STOPPED;
-          }
-        } else {
-          currentState = CURRENT_CLOSED;
-        }
+  switchState2string(currentState:number): string {
+    const targetState = this.service.getCharacteristic(TargetDoorState).value as number;
+    let current = '';
+    let target = '';
+    target = (targetState === TargetDoorState.OPEN)? 'Open' :
+      (targetState === TargetDoorState.CLOSED)? 'Closed' :
+        'Undefined';
+    current = (currentState === CurrentDoorState.OPEN) ? 'Open' :
+      (currentState === CurrentDoorState.OPENING) ? 'Opening' :
+        (currentState === CurrentDoorState.CLOSED) ? 'Closed' :
+          (currentState === CurrentDoorState.CLOSING) ? 'Closing' :
+            (currentState === CurrentDoorState.STOPPED) ? 'Stopped' :
+              'Undefined';
+    return current + ', ' + target;
+  }
+
+  setSwitchState() {
+    const openedState = this.openedSensorState.State;
+    const closedState = this.closedSensorState.State;
+    let switchState = this.service.getCharacteristic(this.platform.Characteristic.CurrentDoorState).value!;
+    if (openedState !== closedState) {
+      if (openedState === ContactSensorState.CONTACT_DETECTED) {
+        switchState = CurrentDoorState.OPEN;
       } else {
-        if (closedState) {
-          currentState = CURRENT_OPEN;
+        switchState = CurrentDoorState.CLOSED;
+      }
+    } else {
+      if (openedState === ContactSensorState.CONTACT_DETECTED) {
+        switchState = CurrentDoorState.STOPPED;
+      } else {
+        if (switchState === CurrentDoorState.OPEN || switchState === CurrentDoorState.OPENING) {
+          switchState = CurrentDoorState.OPENING;
         } else {
-          currentState = CURRENT_STOPPED;
+          switchState = CurrentDoorState.CLOSING;
         }
       }
-      this.service.setCharacteristic(CurrentDoorState, currentState);
-
-      // this.platform.log.debug('Triggering motionSensorOneService:', motionDetected);
-      // this.platform.log.debug('Triggering motionSensorTwoService:', !motionDetected);
-    }, 10000);
+    }
+    this.service.setCharacteristic(CurrentDoorState, switchState);
   }
 
-  /**
-   * Handle "SET" requests from HomeKit
-   * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
-   */
-  async setOn(value: CharacteristicValue) {
-    // implement your own code to turn your device on/off
-    this.switchState.On = value as boolean;
+  // /**
+  //  * Handle "SET" requests from HomeKit
+  //  * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
+  //  */
+  // async setOn(value: CharacteristicValue) {
+  //   // implement your own code to turn your device on/off
+  //   this.switchState.On = value as boolean;
 
-    this.platform.log.debug('Set Characteristic On ->', value);
-  }
+  //   this.platform.log.debug('Set Characteristic On ->', value);
+  // }
 
-  /**
-   * Handle the "GET" requests from HomeKit
-   * These are sent when HomeKit wants to know the current state of the accessory, for example, checking if a Light bulb is on.
-   *
-   * GET requests should return as fast as possbile. A long delay here will result in
-   * HomeKit being unresponsive and a bad user experience in general.
-   *
-   * If your device takes time to respond you should update the status of your device
-   * asynchronously instead using the `updateCharacteristic` method instead.
+  // /**
+  //  * Handle the "GET" requests from HomeKit
+  //  * These are sent when HomeKit wants to know the current state of the accessory, for example, checking if a Light bulb is on.
+  //  *
+  //  * GET requests should return as fast as possbile. A long delay here will result in
+  //  * HomeKit being unresponsive and a bad user experience in general.
+  //  *
+  //  * If your device takes time to respond you should update the status of your device
+  //  * asynchronously instead using the `updateCharacteristic` method instead.
 
-   * @example
-   * this.service.updateCharacteristic(this.platform.Characteristic.On, true)
-   */
-  async getOn(): Promise<CharacteristicValue> {
-    // implement your own code to check if the device is on
-    const isOn = this.switchState.On;
+  //  * @example
+  //  * this.service.updateCharacteristic(this.platform.Characteristic.On, true)
+  //  */
+  // async getOn(): Promise<CharacteristicValue> {
+  //   // implement your own code to check if the device is on
+  //   const isOn = this.switchState.On;
 
-    this.platform.log.debug('Get Characteristic On ->', isOn);
+  //   this.platform.log.debug('Get Characteristic On ->', isOn);
 
-    // if you need to return an error to show the device as "Not Responding" in the Home app:
-    // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+  //   // if you need to return an error to show the device as "Not Responding" in the Home app:
+  //   // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
 
-    return isOn;
-  }
+  //   return isOn;
+  // }
 
-  async setSensorOn(value: CharacteristicValue) {
-    // implement your own code to turn your device on/off
-    this.switchState.On = value as boolean;
+  // async setSensorOn(value: CharacteristicValue) {
+  //   // implement your own code to turn your device on/off
+  //   this.switchState.On = value as boolean;
 
-    this.platform.log.debug('Set Characteristic Open Sensor ->', value);
-  }
+  //   this.platform.log.debug('Set Characteristic Open Sensor ->', value);
+  // }
 
-  async getSensorOn(): Promise<CharacteristicValue> {
-    // implement your own code to check if the device is on
-    const isOn = this.switchState.On;
+  // async getSensorOn(): Promise<CharacteristicValue> {
+  //   // implement your own code to check if the device is on
+  //   const isOn = this.switchState.On;
 
-    this.platform.log.debug('Get Characteristic Open Sensor ->', isOn);
+  //   this.platform.log.debug('Get Characteristic Open Sensor ->', isOn);
 
-    // if you need to return an error to show the device as "Not Responding" in the Home app:
-    // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+  //   // if you need to return an error to show the device as "Not Responding" in the Home app:
+  //   // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
 
-    return isOn;
-  }
+  //   return isOn;
+  // }
 
 }
