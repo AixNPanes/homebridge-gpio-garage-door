@@ -10,13 +10,16 @@ import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpenere';
 export class GPIOGarageDoorAccessory {
   private service: Service;
 
-  /**
-   * These are just used to create a working example
-   * You should implement your own code to track the state of your accessory
-   */
-  private exampleStates = {
+  private switchState = {
     On: false,
-    Brightness: 100,
+  };
+
+  private openedSensorState = {
+    State: 0,
+  };
+
+  private closedSensorState = {
+    State: 0,
   };
 
   constructor(
@@ -30,22 +33,53 @@ export class GPIOGarageDoorAccessory {
       .setCharacteristic(this.platform.Characteristic.Model, 'Default-Model')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, 'Default-Serial');
 
+    const Name = this.platform.Characteristic.Name;
+
+    const GarageDoorOpener = this.platform.Service.GarageDoorOpener;
+
+    const ContactSensor = this.platform.Service.ContactSensor;
+
+    const ContactSensorState = this.platform.Characteristic.ContactSensorState;
+    const CONTACT_DETECTED = ContactSensorState.CONTACT_DETECTED;
+    const CONTACT_NOT_DETECTED = ContactSensorState.CONTACT_NOT_DETECTED;
+
+    const CurrentDoorState = this.platform.Characteristic.CurrentDoorState;
+    const CURRENT_OPEN = CurrentDoorState.OPEN;
+    const CURRENT_OPENING = CurrentDoorState.OPENING;
+    const CURRENT_CLOSED = CurrentDoorState.CLOSED;
+    const CURRENT_CLOSING = CurrentDoorState.CLOSING;
+    const CURRENT_STOPPED = CurrentDoorState.STOPPED;
+
+    const TargetDoorState = this.platform.Characteristic.TargetDoorState;
+    // const TARGET_OPEN = TargetDoorState.OPEN;
+    // const TARGET_CLOSE = TargetDoorState.CLOSED;
+
     // get the LightBulb service if it exists, otherwise create a new LightBulb service
     // you can create multiple services for each accessory
-    this.service = this.accessory.getService(this.platform.Service.GarageDoorOpener)
-      || this.accessory.addService(this.platform.Service.GarageDoorOpener);
+    this.service = this.accessory.getService(GarageDoorOpener)
+      || this.accessory.addService(GarageDoorOpener);
 
     // set the service name, this is what is displayed as the default name on the Home app
     // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
-    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.displayName);
+    this.service.setCharacteristic(Name, accessory.context.device.displayName);
 
     // each service must implement at-minimum the "required characteristics" for the given service type
     // see https://developers.homebridge.io/#/service/Lightbulb
 
     // register handlers for the On/Off Characteristic
-    this.service.getCharacteristic(this.platform.Characteristic.TargetDoorState)
-      .onSet(this.setOn.bind(this))                // SET - bind to the `setOn` method below
-      .onGet(this.getOn.bind(this));               // GET - bind to the `getOn` method below
+    this.service.getCharacteristic(TargetDoorState)
+      .onSet((value) => {
+        this.switchState.On = value as boolean;
+        this.platform.log.debug('Set Switch Characteristic On ->', value);
+      })
+      .onGet(() => {
+        const isOn = this.switchState.On;
+        this.platform.log.debug('Get Switch Characteristic On ->', isOn);
+
+        // if you need to return an error to show the device as "Not Responding" in the Home app:
+        // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+        return isOn;
+      });
 
     /**
      * Creating multiple services of the same type.
@@ -60,17 +94,40 @@ export class GPIOGarageDoorAccessory {
 
     // add two "contsact sensors" services to the accessory
     const openedContactSensorService = this.accessory.getService('Opened Contact Sensor') ||
-      this.accessory.addService(this.platform.Service.ContactSensor, 'Opened Contact Sensor', 'OpenedContactSensor');
+      this.accessory.addService(ContactSensor, 'Opened Contact Sensor', 'OpenedContactSensor');
     this.platform.log.debug('contactSensor: ' + openedContactSensorService.displayName);
+    openedContactSensorService.getCharacteristic(ContactSensorState)
+      .onSet((value) => {
+        this.openedSensorState.State = value as number;
+        this.platform.log.debug('Set Opened Sensor Characteristic On ->', value);
+      })
+      .onGet(() => {
+        const state = this.openedSensorState.State;
+        this.platform.log.debug('Get Opened Sensor Characteristic On ->', state);
+
+        // if you need to return an error to show the device as "Not Responding" in the Home app:
+        // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+        return state;
+      });
 
     const closedContactSensorService = this.accessory.getService('Closed Contact Sensor') ||
-      this.accessory.addService(this.platform.Service.ContactSensor, 'Closed Contact Sensor', 'ClosedContactSensor');
+      this.accessory.addService(ContactSensor, 'Closed Contact Sensor', 'ClosedContactSensor');
     this.platform.log.debug('contactSensor: ' + closedContactSensorService.displayName);
+    closedContactSensorService.getCharacteristic(ContactSensorState)
+      .onSet((value) => {
+        this.closedSensorState.State = value as number;
+        this.platform.log.debug('Set Closed Sensor Characteristic On ->', value);
+      })
+      .onGet(() => {
+        const state = this.closedSensorState.State;
+        this.platform.log.debug('Get Closed Sensor Characteristic On ->', state);
+
+        // if you need to return an error to show the device as "Not Responding" in the Home app:
+        // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+        return state;
+      });
 
     setInterval(() => {
-      const ContactSensorState = this.platform.Characteristic.ContactSensorState;
-      const CONTACT_DETECTED = ContactSensorState.CONTACT_DETECTED;
-      const CONTACT_NOT_DETECTED = ContactSensorState.CONTACT_NOT_DETECTED;
       const openedContactState = Math.floor(Math.random() * 2) === 1
         ? CONTACT_DETECTED
         : CONTACT_NOT_DETECTED;
@@ -84,12 +141,6 @@ export class GPIOGarageDoorAccessory {
       openedContactSensorService.setCharacteristic(this.platform.Characteristic.ContactSensorState, openedState);
       closedContactSensorService.setCharacteristic(this.platform.Characteristic.ContactSensorState, closedState);
 
-      const CurrentDoorState = this.platform.Characteristic.CurrentDoorState;
-      const CURRENT_OPEN = CurrentDoorState.OPEN;
-      const CURRENT_OPENING = CurrentDoorState.OPENING;
-      const CURRENT_CLOSED = CurrentDoorState.CLOSED;
-      const CURRENT_CLOSING = CurrentDoorState.CLOSING;
-      const CURRENT_STOPPED = CurrentDoorState.STOPPED;
       let currentState = this.service.getCharacteristic(CurrentDoorState).value;
       if (openedState) {
         if (closedState) {
@@ -128,7 +179,7 @@ export class GPIOGarageDoorAccessory {
    */
   async setOn(value: CharacteristicValue) {
     // implement your own code to turn your device on/off
-    this.exampleStates.On = value as boolean;
+    this.switchState.On = value as boolean;
 
     this.platform.log.debug('Set Characteristic On ->', value);
   }
@@ -148,7 +199,7 @@ export class GPIOGarageDoorAccessory {
    */
   async getOn(): Promise<CharacteristicValue> {
     // implement your own code to check if the device is on
-    const isOn = this.exampleStates.On;
+    const isOn = this.switchState.On;
 
     this.platform.log.debug('Get Characteristic On ->', isOn);
 
@@ -157,4 +208,24 @@ export class GPIOGarageDoorAccessory {
 
     return isOn;
   }
+
+  async setSensorOn(value: CharacteristicValue) {
+    // implement your own code to turn your device on/off
+    this.switchState.On = value as boolean;
+
+    this.platform.log.debug('Set Characteristic Open Sensor ->', value);
+  }
+
+  async getSensorOn(): Promise<CharacteristicValue> {
+    // implement your own code to check if the device is on
+    const isOn = this.switchState.On;
+
+    this.platform.log.debug('Get Characteristic Open Sensor ->', isOn);
+
+    // if you need to return an error to show the device as "Not Responding" in the Home app:
+    // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+
+    return isOn;
+  }
+
 }
