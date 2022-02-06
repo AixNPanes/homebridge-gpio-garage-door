@@ -57,13 +57,18 @@ export class GPIOGarageDoorAccessory {
     // see https://developers.homebridge.io/#/service/Lightbulb
 
     this.switchGpio = new Gpio(this.platform.Config.doorSwitchPin, 'high');
+    this.switchGpio.writeSync(0);
 
     // register handlers for the On/Off Characteristic
     this.service.getCharacteristic(TargetDoorState)
       .onSet((value) => {
         this.switchState.On = value as boolean;
-        this.switchGpio.writeSync(this.switchState.On?1:0);
+        this.switchGpio.writeSync(1);
         this.platform.log.debug('Set Switch Characteristic On ->', this.switchState2string(value as number));
+        setTimeout(() => {
+          this.switchGpio.writeSync(0);
+          this.platform.log.debug('Set Switch Characteristic On ->', this.switchState2string(value as number));
+        }, this.platform.Config.doorSwitchContactInMilliseconds);
       })
       .onGet(() => {
         const isOn = this.switchState.On;
