@@ -1,7 +1,7 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { GarageDoorConfig } from './GarageDoorConfig';
+import { GarageConfig } from './GarageConfig';
 import { GPIOGarageDoorAccessory } from './GPIOGarageDoorAccessory';
 
 /**
@@ -12,7 +12,7 @@ import { GPIOGarageDoorAccessory } from './GPIOGarageDoorAccessory';
 export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
-  public Config: GarageDoorConfig;
+  public Config: GarageConfig;
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
@@ -23,7 +23,7 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
-    this.Config = new GarageDoorConfig(config, log);
+    this.Config = new GarageConfig(config, log);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
@@ -86,7 +86,7 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
 
         // create the accessory handler for the restored accessory
         // this is imported from `platformAccessory.ts`
-        new GPIOGarageDoorAccessory(this, existingAccessory);
+        new GPIOGarageDoorAccessory(this, existingAccessory, this.Config.door1Config);
 
         // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
         // remove platform accessories when no longer present
@@ -105,7 +105,7 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
 
         // create the accessory handler for the newly create accessory
         // this is imported from `platformAccessory.ts`
-        new GPIOGarageDoorAccessory(this, accessory);
+        new GPIOGarageDoorAccessory(this, accessory, this.Config.door1Config);
 
         // link the accessory to your platform
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);

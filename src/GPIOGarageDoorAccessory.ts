@@ -1,9 +1,10 @@
 import { ContactSensor, ContactSensorState, CurrentDoorState, GarageDoorOpener } from 'hap-nodejs/dist/lib/definitions';
 import { Name, TargetDoorState } from 'hap-nodejs/dist/lib/definitions';
-import { Service, PlatformAccessory } from 'homebridge';
+import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { Gpio } from 'onoff';
+import { GarageDoorConfig } from './GarageDoorConfig';
 
-import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpenere';
+import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpener';
 
 /**
  * Platform Accessory
@@ -17,6 +18,7 @@ export class GPIOGarageDoorAccessory {
   private openedGpio: Gpio;
   private closedGpio: Gpio;
   private switchGpio: Gpio;
+  private timeoutID: NodeJS.Timeout | null = null;
 
   private switchState = {
     On: false,
@@ -33,6 +35,7 @@ export class GPIOGarageDoorAccessory {
   constructor(
     private readonly platform: GPIOGarageDoorOpener,
     private readonly accessory: PlatformAccessory,
+    private readonly config: GarageDoorConfig,
   ) {
 
     // set accessory information
@@ -56,19 +59,28 @@ export class GPIOGarageDoorAccessory {
     // each service must implement at-minimum the "required characteristics" for the given service type
     // see https://developers.homebridge.io/#/service/Lightbulb
 
-    this.switchGpio = new Gpio(this.platform.Config.doorSwitchPin, 'high');
+    platform.log.debug('doorSwitchPin: ' + config.doorSwitchPin);
+    this.switchGpio = new Gpio(config.doorSwitchPin, 'high');
     this.switchGpio.writeSync(0);
 
     // register handlers for the On/Off Characteristic
     this.service.getCharacteristic(TargetDoorState)
       .onSet((value) => {
+        this.platform.log.debug('trace:\n' + (new Error()).stack);
         this.switchState.On = value as boolean;
         this.switchGpio.writeSync(1);
+        // this.setTargetState();
         this.platform.log.debug('Set Switch Characteristic On ->', this.switchState2string(value as number));
         setTimeout(() => {
           this.switchGpio.writeSync(0);
           this.platform.log.debug('Set Switch Characteristic On ->', this.switchState2string(value as number));
-        }, this.platform.Config.doorSwitchContactInMilliseconds);
+        }, config.doorSwitchContactInMS);
+        this.platform.log.debug('Set Switch Characteristic Continuing');
+        this.timeoutID = setTimeout(() => {
+          this.service.setCharacteristic(CurrentDoorState, CurrentDoorState.STOPPED);
+          this.timeoutID = null;
+          this.platform.log.debug('Set Switch Characteristic Complete');
+        }, 5000);
       })
       .onGet(() => {
         const isOn = this.switchState.On;
@@ -107,7 +119,8 @@ export class GPIOGarageDoorAccessory {
         // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
         return state;
       });
-    this.openedGpio = new Gpio(this.platform.Config.doorOpenedSensorPin, 'in', 'both', {});
+    this.platform.log.debug('coorOpenedSensorPin: ' + config.doorOpenedSensorPin);
+    this.openedGpio = new Gpio(config.doorOpenedSensorPin, 'in', 'both', {});
     this.openedContactSensorService.setCharacteristic(ContactSensorState, this.openedGpio.readSync());
     this.openedGpio.watch((err, valueOpened) => {
       if (err !== null && err !== undefined) {
@@ -133,7 +146,8 @@ export class GPIOGarageDoorAccessory {
         // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
         return state;
       });
-    this.closedGpio = new Gpio(this.platform.Config.doorClosedSensorPin, 'in', 'both', {});
+    this.platform.log.debug('coorClosedSensorPin: ' + config.doorClosedSensorPin);
+    this.closedGpio = new Gpio(config.doorClosedSensorPin, 'in', 'both', {});
     this.closedContactSensorService.setCharacteristic(ContactSensorState, this.closedGpio.readSync());
     this.closedGpio.watch((err, valueClosed) => {
       if (err !== null && err !== undefined) {
@@ -191,6 +205,21 @@ export class GPIOGarageDoorAccessory {
       }
     }
     this.service.setCharacteristic(CurrentDoorState, switchState);
+  }
+
+  setTargetState() {
+    const currentState = this.service.getCharacteristic(CurrentDoorState).value!;
+    let targetState: CharacteristicValue | null = null;
+    if (currentState === CurrentDoorState.OPEN || currentState === CurrentDoorState.OPENING) {
+      targetState = TargetDoorState.CLOSED;
+    } else {
+      if (currentState === CurrentDoorState.CLOSED || currentState === CurrentDoorState.CLOSING) {
+        targetState = TargetDoorState.OPEN;
+      }
+    }
+    if (targetState !== null) {
+      this.service.setCharacteristic(TargetDoorState, targetState);
+    }
   }
 
   // /**

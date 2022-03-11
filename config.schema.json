@@ -17,32 +17,32 @@
         "required": true,
         "default": "5edc5fa5-0d95-442c-9bc7-a9da70bc3827"
       },
-      "doorOpenedSensorPin": {
-        "title": "Door Opened Sensor Pin (BCM)",
+      "door1OpenedSensorPin": {
+        "title": "Door 1 Opened Sensor Pin (BCM)",
         "type": "number",
         "required": true,
         "default": 3
       },
-      "doorClosedSensorPin": {
-        "title": "Door Closed Sensor Pin (BCM)",
+      "door1ClosedSensorPin": {
+        "title": "Door 1 Closed Sensor Pin (BCM)",
         "type": "number",
         "required": true,
         "default": 4
       },
-      "doorSwitchPin": {
-        "title": "Door Switch Pin (BCM)",
+      "door1SwitchPin": {
+        "title": "Door 1 Switch Pin (BCM)",
         "type": "number",
         "required": true,
         "default": 5
       },
-      "doorOpensInSeconds": {
-        "title": "Door opens in seconds",
+      "door1OpensInSeconds": {
+        "title": "Door 1 opens in seconds",
         "type": "number",
         "required": true,
         "default": 5
       },
-      "doorSwitchContactInMilliseconds": {
-        "title": "Door switch contact in milliseconds",
+      "door1SwitchContactInMilliseconds": {
+        "title": "Door 1 switch contact in milliseconds",
         "type": "number",
         "required": true,
         "default": 500
