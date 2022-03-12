@@ -3,7 +3,6 @@ import { Name, TargetDoorState } from 'hap-nodejs/dist/lib/definitions';
 import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { Gpio } from 'onoff';
 import { GarageDoorConfig } from './GarageDoorConfig';
-
 import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpener';
 
 /**
@@ -107,7 +106,7 @@ export class GPIOGarageDoorAccessory {
       this.accessory.addService(ContactSensor, 'Opened Contact Sensor', 'OpenedContactSensor');
     this.openedContactSensorService.getCharacteristic(ContactSensorState)
       .onSet((valueOpened) => {
-        this.openedSensorState.State = valueOpened as number;
+        this.openedSensorState.State = this.contactSensorState(config.doorOpenedSensorPin, valueOpened);
         this.platform.log.debug('Set Opened Sensor Characteristic On ->', this.contactSensor2string(this.openedSensorState.State));
         this.setSwitchState();
       })
@@ -134,7 +133,7 @@ export class GPIOGarageDoorAccessory {
       this.accessory.addService(ContactSensor, 'Closed Contact Sensor', 'ClosedContactSensor');
     this.closedContactSensorService.getCharacteristic(ContactSensorState)
       .onSet((valueClosed) => {
-        this.closedSensorState.State = valueClosed as number;
+        this.closedSensorState.State = this.contactSensorState(config.doorClosedSensorPin, valueClosed);
         this.platform.log.debug('Set Closed Sensor Characteristic On ->', this.contactSensor2string(this.closedSensorState.State));
         this.setSwitchState();
       })
@@ -153,10 +152,16 @@ export class GPIOGarageDoorAccessory {
       if (err !== null && err !== undefined) {
         throw err;
       }
-      this.closedContactSensorService.setCharacteristic(ContactSensorState, valueClosed);
+      this.closedContactSensorService.setCharacteristic(
+        ContactSensorState,
+        this.contactSensorState(config.doorClosedSensorPin, valueClosed));
     });
 
     // this.service.setCharacteristic(CurrentDoorState, currentState);
+  }
+
+  contactSensorState(pin: number, value: CharacteristicValue): number {
+    return pin < 9 ? value as number : (1 - (value as number));
   }
 
   contactSensor2string(sensor: number): string {
