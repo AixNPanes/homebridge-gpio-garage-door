@@ -2,7 +2,7 @@ import { ContactSensor, ContactSensorState, CurrentDoorState, GarageDoorOpener }
 import { Name, TargetDoorState } from 'hap-nodejs/dist/lib/definitions';
 import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { Gpio } from 'onoff';
-import { GarageDoorConfig } from './GarageDoorConfig';
+import { DoorConfig } from './DoorConfig';
 import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpener';
 
 /**
@@ -34,7 +34,7 @@ export class GPIOGarageDoorAccessory {
   constructor(
     private readonly platform: GPIOGarageDoorOpener,
     private readonly accessory: PlatformAccessory,
-    private readonly config: GarageDoorConfig,
+    private readonly config: DoorConfig,
   ) {
 
     // set accessory information
