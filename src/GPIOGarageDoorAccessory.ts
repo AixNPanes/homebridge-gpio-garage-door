@@ -1,8 +1,9 @@
-import { ContactSensor, ContactSensorState, CurrentDoorState, GarageDoorOpener } from 'hap-nodejs/dist/lib/definitions';
+import { ContactSensorState, CurrentDoorState, GarageDoorOpener } from 'hap-nodejs/dist/lib/definitions';
 import { Name, TargetDoorState } from 'hap-nodejs/dist/lib/definitions';
 import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { Gpio } from 'onoff';
 import { DoorConfig } from './DoorConfig';
+import { GPIOContactSensorService, OPEN_CLOSE } from './GPIOContactSensorService';
 import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpener';
 
 /**
@@ -11,11 +12,10 @@ import { GPIOGarageDoorOpener } from './GPIOGarageDoorOpener';
  * Each accessory may expose multiple services of different service types.
  */
 export class GPIOGarageDoorAccessory {
-  private service: Service;
-  private openedContactSensorService: Service;
-  private closedContactSensorService: Service;
-  private openedGpio: Gpio;
-  private closedGpio: Gpio;
+  public service: Service;
+  public readonly platform: GPIOGarageDoorOpener;
+  public openedContactSensorService: GPIOContactSensorService;
+  public closedContactSensorService: GPIOContactSensorService;
   private switchGpio: Gpio;
   private timeoutID: NodeJS.Timeout | null = null;
 
@@ -23,20 +23,13 @@ export class GPIOGarageDoorAccessory {
     On: false,
   };
 
-  private openedSensorState = {
-    State: 0,
-  };
-
-  private closedSensorState = {
-    State: 0,
-  };
-
   constructor(
-    private readonly platform: GPIOGarageDoorOpener,
-    private readonly accessory: PlatformAccessory,
-    private readonly config: DoorConfig,
+    private readonly garageDoorOpener: GPIOGarageDoorOpener,
+    public readonly accessory: PlatformAccessory,
+    public readonly config: DoorConfig,
   ) {
-
+    this.platform = garageDoorOpener;
+    this.platform.log.debug('platform:' + this.platform);
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Default-Manufacturer')
@@ -58,7 +51,7 @@ export class GPIOGarageDoorAccessory {
     // each service must implement at-minimum the "required characteristics" for the given service type
     // see https://developers.homebridge.io/#/service/Lightbulb
 
-    platform.log.debug('doorSwitchPin: ' + config.doorSwitchPin);
+    this.platform.log.debug('doorSwitchPin: ' + config.doorSwitchPin);
     this.switchGpio = new Gpio(config.doorSwitchPin, 'high');
     this.switchGpio.writeSync(0);
 
@@ -102,74 +95,10 @@ export class GPIOGarageDoorAccessory {
      */
 
     // add two "contsact sensors" services to the accessory
-    this.openedContactSensorService = this.accessory.getService('Opened Contact Sensor') ||
-      this.accessory.addService(ContactSensor, 'Opened Contact Sensor', 'OpenedContactSensor');
-    this.openedContactSensorService.getCharacteristic(ContactSensorState)
-      .onSet((valueOpened) => {
-        this.openedSensorState.State = this.contactSensorState(config.doorOpenedSensorPin, valueOpened);
-        this.platform.log.debug('Set Opened Sensor Characteristic On ->', this.contactSensor2string(this.openedSensorState.State));
-        this.setSwitchState();
-      })
-      .onGet(() => {
-        const state = this.openedSensorState.State;
-        this.platform.log.debug('Get Opened Sensor Characteristic On ->', this.contactSensor2string(state));
-
-        // if you need to return an error to show the device as "Not Responding" in the Home app:
-        // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
-        return state;
-      });
-    this.platform.log.debug('coorOpenedSensorPin: ' + config.doorOpenedSensorPin);
-    this.openedGpio = new Gpio(config.doorOpenedSensorPin, 'in', 'both', {});
-    this.openedContactSensorService.setCharacteristic(ContactSensorState, this.openedGpio.readSync());
-    this.openedGpio.watch((err, valueOpened) => {
-      if (err !== null && err !== undefined) {
-        throw err;
-      }
-      this.openedContactSensorService.setCharacteristic(ContactSensorState, valueOpened);
-
-    });
-
-    this.closedContactSensorService = this.accessory.getService('Closed Contact Sensor') ||
-      this.accessory.addService(ContactSensor, 'Closed Contact Sensor', 'ClosedContactSensor');
-    this.closedContactSensorService.getCharacteristic(ContactSensorState)
-      .onSet((valueClosed) => {
-        this.closedSensorState.State = this.contactSensorState(config.doorClosedSensorPin, valueClosed);
-        this.platform.log.debug('Set Closed Sensor Characteristic On ->', this.contactSensor2string(this.closedSensorState.State));
-        this.setSwitchState();
-      })
-      .onGet(() => {
-        const state = this.closedSensorState.State;
-        this.platform.log.debug('Get Closed Sensor Characteristic On ->', this.contactSensor2string(state));
-
-        // if you need to return an error to show the device as "Not Responding" in the Home app:
-        // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
-        return state;
-      });
-    this.platform.log.debug('coorClosedSensorPin: ' + config.doorClosedSensorPin);
-    this.closedGpio = new Gpio(config.doorClosedSensorPin, 'in', 'both', {});
-    this.closedContactSensorService.setCharacteristic(ContactSensorState, this.closedGpio.readSync());
-    this.closedGpio.watch((err, valueClosed) => {
-      if (err !== null && err !== undefined) {
-        throw err;
-      }
-      this.closedContactSensorService.setCharacteristic(
-        ContactSensorState,
-        this.contactSensorState(config.doorClosedSensorPin, valueClosed));
-    });
-
-    // this.service.setCharacteristic(CurrentDoorState, currentState);
-  }
-
-  contactSensorState(pin: number, value: CharacteristicValue): number {
-    return pin < 9 ? value as number : (1 - (value as number));
-  }
-
-  contactSensor2string(sensor: number): string {
-    if (sensor === ContactSensorState.CONTACT_DETECTED) {
-      return 'CONTACT_DETECTED';
-    } else {
-      return 'CONTACT_NOT_DETECTED';
-    }
+    this.openedContactSensorService = new GPIOContactSensorService(this, config, OPEN_CLOSE.OPENED, 1);
+    this.openedContactSensorService.addListener(this.setSwitchState);
+    this.closedContactSensorService = new GPIOContactSensorService(this, config, OPEN_CLOSE.CLOSED, 1);
+    this.closedContactSensorService.addListener(this.setSwitchState);
   }
 
   switchState2string(currentState:number): string {
@@ -188,10 +117,10 @@ export class GPIOGarageDoorAccessory {
     return current + ', ' + target;
   }
 
-  setSwitchState() {
-    const openedState = this.openedSensorState.State;
-    const closedState = this.closedSensorState.State;
-    let switchState = this.service.getCharacteristic(this.platform.Characteristic.CurrentDoorState).value!;
+  setSwitchState(accessory: GPIOGarageDoorAccessory) {
+    const openedState = accessory.openedContactSensorService.sensorState.State;
+    const closedState = accessory.closedContactSensorService.sensorState.State;
+    let switchState = accessory.service.getCharacteristic(accessory.platform.Characteristic.CurrentDoorState).value!;
     if (openedState !== closedState) {
       if (openedState === ContactSensorState.CONTACT_DETECTED) {
         switchState = CurrentDoorState.OPEN;
@@ -209,7 +138,7 @@ export class GPIOGarageDoorAccessory {
         }
       }
     }
-    this.service.setCharacteristic(CurrentDoorState, switchState);
+    accessory.service.setCharacteristic(CurrentDoorState, switchState);
   }
 
   setTargetState() {
