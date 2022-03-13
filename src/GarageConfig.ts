@@ -5,7 +5,7 @@ export class GarageConfig {
   // Configuration properties
   public name: string;
   public id: string;
-  public doorConfig: DoorConfig;
+  public doorConfig: DoorConfig[] = [];
   public hideDoorSensors: boolean;
   constructor(
     public platformConfig: PlatformConfig,
@@ -18,7 +18,14 @@ export class GarageConfig {
     log.debug('===========Config:', this.name);
     log.debug('               id:', this.id);
     log.debug('  hideDoorSensors:', this.hideDoorSensors);
-    this.doorConfig = new DoorConfig(this, 1);
-    this.doorConfig.logit();
+    for(let i = 1;;i++) {
+      const newConfig = new DoorConfig(this, i);
+      if (newConfig.isDefault()) {
+        break;
+      }
+      this.doorConfig.push(newConfig);
+      log.debug('doorConfig.length:' + this.doorConfig.length);
+      newConfig.logit();
+    }
   }
 }
