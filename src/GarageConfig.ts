@@ -21,8 +21,7 @@ export class GarageConfig {
     const doors = platformConfig['doors'];
     for(let i = 0; i < Object.keys(doors).length; i++) {
       const door = doors['' + i + ''];
-      log.debug('door:', door);
-      const doorConfig = new DoorConfig(door, log);
+      const doorConfig = new DoorConfig(door);
       this.doorConfig.push(doorConfig);
       doorConfig.logit(log, i);
     }

@@ -60,7 +60,7 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
     const devices = [
       {
         uniqueId: 'ABCD',
-        displayName: 'Garage',
+        // displayName: 'Garage',
       },
     ];
 
@@ -93,11 +93,12 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
         // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
         // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
       } else {
+        const config = this.Config.doorConfig[0];
         // the accessory does not yet exist, so we need to create it
-        this.log.info('Adding new accessory:', device.displayName);
+        this.log.info('Adding new accessory:', config.displayName);
 
         // create a new accessory
-        const accessory = new this.api.platformAccessory(device.displayName, uuid);
+        const accessory = new this.api.platformAccessory(config.displayName, uuid);
 
         // store a copy of the device object in the `accessory.context`
         // the `context` property can be used to store any data about the accessory you may need

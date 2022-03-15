@@ -1,6 +1,7 @@
 import { Logger } from 'homebridge';
 
 export class DoorConfig {
+  public displayName: string;
   public doorOpenedSensorPin: number;
   public doorClosedSensorPin: number;
   public doorSwitchPin: number;
@@ -8,8 +9,8 @@ export class DoorConfig {
   public doorSwitchContactInMS: number;
 
   /* eslint-disable  @typescript-eslint/no-explicit-any */
-  constructor(config: Record<string, any>, log: Logger) {
-    log.debug('DoorConfig.constructor():', config);
+  constructor(config: Record<string, any>) {
+    this.displayName = config['displayName'];
     this.doorOpenedSensorPin = config['doorOpenedSensorPin'];
     this.doorClosedSensorPin = config['doorClosedSensorPin'];
     this.doorSwitchPin = config['doorSwitchPin'];
@@ -19,6 +20,7 @@ export class DoorConfig {
 
   public logit(log: Logger, door: number) {
     log.debug('   -------door: ', door);
+    log.debug('              display name: ', this.displayName);
     log.debug('                  open pin: ', this.doorOpenedSensorPin);
     log.debug('                 close pin: ', this.doorClosedSensorPin);
     log.debug('                switch pin: ', this.doorSwitchPin);

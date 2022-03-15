@@ -29,6 +29,12 @@
         "items": {
           "type": "object",
           "properties": {
+            "displayName": {
+              "title": "Door name",
+              "type": "string",
+              "required": true,
+              "default": "Garage"
+            },
             "doorOpenedSensorPin": {
               "title": "Door Opened Sensor Pin (BCM)",
               "type": "number",

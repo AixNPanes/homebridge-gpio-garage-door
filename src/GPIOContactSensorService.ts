@@ -18,6 +18,8 @@ export class GPIOContactSensorService {
   private pin: number;
   private activeHigh: boolean;
   private listeners: PinStateListener[] = [];
+  public setCharacteristic: string;
+  public watchCharacteristic: string;
 
   public sensorState = {
     State: 0,
@@ -33,6 +35,8 @@ export class GPIOContactSensorService {
     const typeType = opened === OPEN_CLOSE.OPENED ? 'OpenedContactSensor' : 'ClosedContactSensor';
     const typeName = opened === OPEN_CLOSE.OPENED ? 'Opened Contact Sensor' : 'Closed Contact Sensor';
     const characteristicName = opened === OPEN_CLOSE.OPENED ? 'Opened Sensor Characteristic' : 'Closed Sensor Characteristic';
+    this.setCharacteristic = 'Set ' + characteristicName;
+    this.watchCharacteristic = 'Watch ' + characteristicName;
     this.pin = opened === OPEN_CLOSE.OPENED ? doorConfig.doorOpenedSensorPin : doorConfig.doorClosedSensorPin;
     this.activeHigh = this.pin < 9;
     this.service = accessory.getService(typeName) ||
@@ -47,7 +51,7 @@ export class GPIOContactSensorService {
       })
       .onGet(() => {
         this.gpioGarageDoorAccessory.platform.log.debug(
-          'Get ' + characteristicName + ' On ->',
+          this.setCharacteristic + ' ->',
           this.contactSensor2string(this.sensorState.State));
 
         // if you need to return an error to show the device as "Not Responding" in the Home app:
@@ -63,7 +67,7 @@ export class GPIOContactSensorService {
       }
       this.sensorState.State = this.contactSensorState(value);
       this.gpioGarageDoorAccessory.platform.log.debug(
-        'watch ' + characteristicName + ' ->',
+        this.watchCharacteristic + ' ->',
         this.sensorState.State);
       this.service.setCharacteristic(ContactSensorState, this.sensorState.State);
     });
