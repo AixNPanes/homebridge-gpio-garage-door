@@ -18,14 +18,13 @@ export class GarageConfig {
     log.debug('===========Config:', this.name);
     log.debug('               id:', this.id);
     log.debug('  hideDoorSensors:', this.hideDoorSensors);
-    for(let i = 1;;i++) {
-      const newConfig = new DoorConfig(this, i);
-      if (newConfig.isDefault()) {
-        break;
-      }
-      this.doorConfig.push(newConfig);
-      log.debug('doorConfig.length:' + this.doorConfig.length);
-      newConfig.logit();
+    const doors = platformConfig['doors'];
+    for(let i = 0; i < Object.keys(doors).length; i++) {
+      const door = doors['' + i + ''];
+      log.debug('door:', door);
+      const doorConfig = new DoorConfig(door, log);
+      this.doorConfig.push(doorConfig);
+      doorConfig.logit(log, i);
     }
   }
 }
