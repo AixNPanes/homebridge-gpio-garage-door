@@ -32,8 +32,9 @@ export class GPIOContactSensorService {
     private door: number,
   ) {
     const accessory = gpioGarageDoorAccessory.accessory;
+    const doorName = doorConfig['displayName'];
     const typeType = opened === OPEN_CLOSE.OPENED ? 'OpenedContactSensor' : 'ClosedContactSensor';
-    const typeName = opened === OPEN_CLOSE.OPENED ? 'Opened Contact Sensor' : 'Closed Contact Sensor';
+    const typeName = doorName + ' ' + (opened === OPEN_CLOSE.OPENED ? 'Opened Contact Sensor' : 'Closed Contact Sensor');
     const characteristicName = opened === OPEN_CLOSE.OPENED ? 'Opened Sensor Characteristic' : 'Closed Sensor Characteristic';
     this.setCharacteristic = 'Set ' + characteristicName;
     this.watchCharacteristic = 'Watch ' + characteristicName;

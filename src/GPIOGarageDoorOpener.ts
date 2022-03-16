@@ -57,16 +57,25 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
     // EXAMPLE ONLY
     // A real plugin you would discover accessories from the local network, cloud services
     // or a user-defined array in the platform config.
-    const devices = [
-      {
-        uniqueId: 'ABCD',
-        // displayName: 'Garage',
-      },
-    ];
+    // const devicesX = [
+    //   {
+    //     uniqueId: 'ABCD',
+    //   },
+    // ];
+
+    const garageConfig = this.Config;
+    const doorConfigs = this.Config.doorConfig;
+    const deviceName = garageConfig['name'];
 
     // loop over the discovered devices and register each one if it has not already been registered
-    for (const device of devices) {
+    for (let i = 0; i < doorConfigs.length; i++) {
 
+      const doorConfig = doorConfigs[i];
+      const displayName = doorConfig['displayName'];
+      const device = {
+        uniqueId: deviceName + displayName + (i.toString()),
+        displayName: deviceName,
+      };
       // generate a unique id for the accessory this should be generated from
       // something globally unique, but constant, for example, the device serial
       // number or MAC address
@@ -86,19 +95,18 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
 
         // create the accessory handler for the restored accessory
         // this is imported from `platformAccessory.ts`
-        new GPIOGarageDoorAccessory(this, existingAccessory, this.Config.doorConfig[0]);
+        new GPIOGarageDoorAccessory(this, existingAccessory, doorConfig);
 
         // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
         // remove platform accessories when no longer present
         // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
         // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
       } else {
-        const config = this.Config.doorConfig[0];
         // the accessory does not yet exist, so we need to create it
-        this.log.info('Adding new accessory:', config.displayName);
+        this.log.info('Adding new accessory:', displayName, '. uuid: ', uuid);
 
         // create a new accessory
-        const accessory = new this.api.platformAccessory(config.displayName, uuid);
+        const accessory = new this.api.platformAccessory(displayName, uuid);
 
         // store a copy of the device object in the `accessory.context`
         // the `context` property can be used to store any data about the accessory you may need
@@ -106,7 +114,7 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
 
         // create the accessory handler for the newly create accessory
         // this is imported from `platformAccessory.ts`
-        new GPIOGarageDoorAccessory(this, accessory, this.Config.doorConfig[0]);
+        new GPIOGarageDoorAccessory(this, accessory, doorConfig);
 
         // link the accessory to your platform
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
