@@ -99,6 +99,7 @@ export class GPIOGarageDoorAccessory {
     this.openedContactSensorService.addListener(this.setSwitchState);
     this.closedContactSensorService = new GPIOContactSensorService(this, config, OPEN_CLOSE.CLOSED, 1);
     this.closedContactSensorService.addListener(this.setSwitchState);
+    this.setTargetState();
   }
 
   switchState2string(currentState:number): string {
