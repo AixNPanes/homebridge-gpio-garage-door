@@ -17,12 +17,6 @@
         "required": true,
         "default": "5edc5fa5-0d95-442c-9bc7-a9da70bc3827"
       },
-      "hideDoorSensors": {
-        "title": "Hide door sensors",
-        "type": "boolean",
-        "required": true,
-        "default": false
-      },
       "doors": {
         "title": "Doors",
         "type": "array",

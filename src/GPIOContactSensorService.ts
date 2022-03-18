@@ -40,7 +40,6 @@ export class GPIOContactSensorService {
     public log: Logger,
     private opened: OPEN_CLOSE,
     private door: number,
-    private hide: boolean,
   ) {
     const accessory = gpioGarageDoorAccessory.accessory;
     const doorName = doorConfig['displayName'];
@@ -53,8 +52,6 @@ export class GPIOContactSensorService {
     this.activeHigh = this.pin < 9;
     this.service = accessory.getService(typeName) ||
       accessory.addService(ContactSensor, typeName, typeType);
-    this.service.setHiddenService(hide);
-    log.debug('siHidden: ', this.service.isHiddenService);
     this.service.getCharacteristic(ContactSensorState)
       .onSet((value) => {
         this.sensorState.State =value as number;

@@ -85,7 +85,6 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
       // see if an accessory with the same uuid has already been registered and restored from
       // the cached devices we stored in the `configureAccessory` method above
       const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
-      const hide = garageConfig.hideDoorSensors;
 
       if (existingAccessory) {
         // the accessory already exists
@@ -97,7 +96,7 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
 
         // create the accessory handler for the restored accessory
         // this is imported from `platformAccessory.ts`
-        new GPIOGarageDoorAccessory(this, existingAccessory, doorConfig, hide);
+        new GPIOGarageDoorAccessory(this, existingAccessory, doorConfig);
 
         // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
         // remove platform accessories when no longer present
@@ -116,7 +115,7 @@ export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
 
         // create the accessory handler for the newly create accessory
         // this is imported from `platformAccessory.ts`
-        new GPIOGarageDoorAccessory(this, accessory, doorConfig, hide);
+        new GPIOGarageDoorAccessory(this, accessory, doorConfig);
 
         // link the accessory to your platform
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
