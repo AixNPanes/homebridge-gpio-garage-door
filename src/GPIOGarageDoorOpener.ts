@@ -10,6 +10,7 @@ import { GPIOGarageDoorAccessory } from './GPIOGarageDoorAccessory';
  * parse the user config and discover/register accessories with Homebridge.
  */
 export class GPIOGarageDoorOpener implements DynamicPlatformPlugin {
+  public name = 'GPIOGarageDoorOpener';
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
   public Config: GarageConfig;
