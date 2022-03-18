@@ -10,7 +10,11 @@ I would have used that as a direct base but I had to make many changes just to g
 
 # Homebridge GPIO Garage Multiple Door Opener for Raspberry Pi
 
-This plugin is feature comple.
+This plugin is feature comple. It can be used to control a garage door. In my case, I am controlling an older model Craftsman garage door opener with a RaspberryPi ZeroW. I have soldered wires to the existing door switch and connected them to the normally open (NO) contacts of a relay. The relay I have chosen (see below) plugs directly onto the GPIO pins of a RaspberryPi with a provided extender connector. It uses 2 contact sensor which can be easily attached to the door and track of the garage door. One is attached when the door is open and the other is attached when the door is closed. Wires are run back to the pins that you specify in your configuration. See __Pin numbering__, below, for guidance.
+
+You may configure multiple garage door controls (see __Configuration__ below). The practical limit is probably 6 as there are only 17 GPIO pins available and each door takes 3 pins. 
+
+## Development
 
 To use it as a development base:
 
@@ -23,21 +27,21 @@ sudo npm link # install a link from this directory into the systems node_modules
 
 ## Pin numbering
 
-Pins are numbered using the Broadcom (BCM) numbering standard. To see the pin mapping used on your Raspberry Pi, install the wiringpi with 'sudo apt install wiringpi' and run the 'gpio readall' command. See https://www.ics.com/blog/gpio-programming-using-sysfs-interface for details.
+Pins are numbered using the Broadcom (BCM) numbering standard. To see the pin mapping used on your Raspberry Pi, install the wiringpi package with 'sudo apt install wiringpi' and run the 'gpio readall' command. See https://www.ics.com/blog/gpio-programming-using-sysfs-interface for details.
 
 I used the Zero Relay: 2-Channel 5V Relay Board for Pi Zero from PiHut (SKU: 103395) which comes with the stacking header presoldered. It uses Raspberry Pi pins 15 (BCM 22) and 29 (BCM 5) as switch ports to trigger relays 1 and 2 respectively. Relay 1 is closest to Raspberry Pi board pin 1/2 and Relay 2 is closest to Raspberry Pi board pin 39/40.
 
-Note that the BCM pins 0-6 have pull-up resistors installed, BCM pins 7 & 8 are apparently hardwired as output pins and cannot be used for sensor inputs, BCM pins 9-29 have pull-down resistors installed. It is therefore assumed that sensors attached to BCM pins 0-6 have their opposite terminals attached to 0V (ground) and that sensors attached to BCM pins 9-29 have their opposite terminals attached to 3.3V.
+Note that the BCM pins 0-6 have pull-up resistors installed, BCM pins 7 & 8 are apparently hardwired as output pins and cannot be used for sensor inputs (although __gpio readall__ implies that 7 is an input as well), BCM pins 9-29 have pull-down resistors installed. It is therefore assumed that sensors attached to BCM pins 0-6 have their opposite terminals attached to 0V (ground) and that sensors attached to BCM pins 9-29 have their opposite terminals attached to 3.3V.
 
 ## Configuration
 
 ##### Name
 
-This is the configuration name for the Accessory. It may be changed as desired.
+This is the configuration name for the Accessory. It may be changed as desired. Required.
 
 ##### UUID
 
-This UUID is used to identify the Accessory internally. If changed, you should generate a new one with an acceptable generator.
+This UUID is used to identify the Accessory internally. If changed, you should generate a new one with an acceptable generator. It must be unique for the plugin. Required.
 
 ##### Doors
 
@@ -49,11 +53,11 @@ This is the name of the door and will be used on the label of the door switch. T
 
 ###### Door Opened Sensor Pin (BCM)
 
-This is the Broadcom pin number to which the Opened sensor is connected. The corresponding pin on the Raspberry Pi should be connected to a contact sensor which is closed when the door is open. Required.
+This is the Broadcom pin number to which the Opened sensor is connected. The corresponding pin on the Raspberry Pi should be connected to a contact sensor which is closed when the door is open and otherwise is open. Required.
 
 ###### Door Closed Sensor Pin (BCM)
 
-This is the Broadcom pin number to which the Closed sensor is connected. The corresponding pin on the Raspberry Pi should be connected to a contact sensor which is closed when the door is closed.Required.
+This is the Broadcom pin number to which the Closed sensor is connected. The corresponding pin on the Raspberry Pi should be connected to a contact sensor which is closed when the door is closed and is otherwise open. Required.
 
 ###### Door Switch Pin (BCM)
 
@@ -91,5 +95,5 @@ Both the Open sensor and the Closed sensor are __Open__ and the previous state w
 
 ##### Stopped
 
-Either oth the Open sensor and the Closed sensor are __Closed__ or the previous activation of the button timed out after __Door opens in seconds__.
+Either the Open sensor and the Closed sensor are __Closed__ or the previous activation of the button timed out after __Door opens in seconds__.
 
