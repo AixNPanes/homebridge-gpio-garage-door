@@ -82,6 +82,7 @@ export class GPIOGarageDoorAccessory {
     private readonly garageDoorOpener: GPIOGarageDoorOpener,
     public readonly accessory: PlatformAccessory,
     public readonly config: DoorConfig,
+    public readonly hide: boolean,
   ) {
     this.log = garageDoorOpener.log;
     this.platform = garageDoorOpener;
@@ -146,10 +147,12 @@ export class GPIOGarageDoorAccessory {
      */
 
     // add two "contsact sensors" services to the accessory
-    this.openedContactSensorService = new GPIOContactSensorService(this, config, this.log, OPEN_CLOSE.OPENED, 1);
+    this.openedContactSensorService = new GPIOContactSensorService(this, config, this.log, OPEN_CLOSE.OPENED, 1, hide);
     this.openedContactSensorService.addListener(this.setSwitchState);
-    this.closedContactSensorService = new GPIOContactSensorService(this, config, this.log, OPEN_CLOSE.CLOSED, 1);
+    this.service.addLinkedService(this.openedContactSensorService.service);
+    this.closedContactSensorService = new GPIOContactSensorService(this, config, this.log, OPEN_CLOSE.CLOSED, 1, hide);
     this.closedContactSensorService.addListener(this.setSwitchState);
+    this.service.addLinkedService(this.closedContactSensorService.service);
     this.setTargetState();
   }
 
